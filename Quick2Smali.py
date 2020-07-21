@@ -26,7 +26,7 @@ import time
 
 outputRoot = "/Users/xuekai/project/Quick2SmaliOutput"
 bakSmaliJar = "/Users/xuekai/project/tools/quick2Smali/baksmali.jar"
-
+AXMLPriter2 = "/Users/xuekai/project/tools/quick2Smali/AXMLPrinter2.jar"
 
 
 def main():
@@ -39,7 +39,10 @@ def main():
         os.system(openCommand)
         return
     if file.endswith(".apk"):
-        apk2Smali(file)
+        result1 = apk2Smali(file)
+        result2 =outputManifest(file)
+        if result1 and result2:
+            openAndSaveCache(file)
     elif file.endswith('.dex'):
         dex2Smali(file)
     elif file.endswith('.jar'):
@@ -47,6 +50,26 @@ def main():
     else:
         print "不支持的类型"
         return
+
+
+def outputManifest(apkFile):
+    # 提取AndroidManifest
+    z = zipfile.ZipFile(apkFile,'r')
+    z.extract('AndroidManifest.xml', path=getOutPutPath(apkFile), pwd=None)
+    z.close()
+    command = 'java -jar %s %s/AndroidManifest.xml > %s/AndroidManifest1.xml' %(AXMLPriter2,getOutPutPath(apkFile),getOutPutPath(apkFile))
+    if os.system(command) == 0:
+        print "解析AndroidManifest成功"
+        os.remove(getOutPutPath(apkFile)+"/AndroidManifest.xml")
+        os.rename(getOutPutPath(apkFile)+"/AndroidManifest1.xml",getOutPutPath(apkFile)+"/AndroidManifest.xml")
+        return True
+    else:
+        print "解析AndroidManifest成功失败"
+        os.remove(getOutPutPath(apkFile)+"/AndroidManifest.xml")
+        os.remove(getOutPutPath(apkFile)+"/AndroidManifest1.xml")
+        return False
+
+
 
 def jar2Smali(jarPath):
     print "准备jar2dex"
@@ -96,8 +119,8 @@ def apk2Smali(apkPath):
              print "dex2Smali成功"
          else:
              print "dex2Smali失败"
-             return
-    openAndSaveCache(apkPath)
+             return False
+    return True
 
 # 用vscode打开，并且缓存文件信息
 def openAndSaveCache(file):
